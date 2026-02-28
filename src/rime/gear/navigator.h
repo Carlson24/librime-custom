@@ -54,6 +54,12 @@ class Navigator : public Processor, public KeyBindingProcessor<Navigator, 2> {
   Spans spans_;
 
   connection select_connection_;
+
+ private:
+  string delimiters_;
+  bool stop_before_delimiter_ = false;
+  bool IsBeforeDelimiter(size_t pos);
+  bool IsAfterDelimiter(size_t pos);
 };
 
 }  // namespace rime

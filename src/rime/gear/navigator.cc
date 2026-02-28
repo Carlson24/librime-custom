@@ -66,6 +66,10 @@ Navigator::Navigator(const Ticket& ticket)
   Config* config = engine_->schema()->config();
   LoadConfig(config, "navigator", Horizontal);
   LoadConfig(config, "navigator/vertical", Vertical);
+  config->GetBool("navigator/stop_before_delimiter", &stop_before_delimiter_);
+  if (stop_before_delimiter_) {
+    config->GetString("speller/delimiter", &delimiters_);
+  }
 
   select_connection_ = engine_->context()->select_notifier().connect(
       [this](Context* ctx) { OnSelect(ctx); });
@@ -212,6 +216,8 @@ bool Navigator::JumpLeft(Context* ctx, size_t start_pos, bool loop) {
               : (std::max)(start_pos, spans_.PreviousStop(end_of_input))
           // 跳至前一個切分點
           : (std::max)(start_pos, spans_.PreviousStop(caret_pos));
+  if (stop_before_delimiter_ && IsAfterDelimiter(new_pos) && caret_pos != new_pos - 1)
+    new_pos--;
   if (new_pos != caret_pos) {
     ctx->set_caret_pos(new_pos);
     return true;
@@ -231,6 +237,8 @@ bool Navigator::JumpRight(Context* ctx, size_t start_pos, bool loop) {
       : (caret_pos >= end_of_translation) ? end_of_input
                                           // 跳至後一個切分點
                                           : spans_.NextStop(caret_pos);
+  if (stop_before_delimiter_ && IsAfterDelimiter(new_pos) && caret_pos != new_pos - 1)
+    new_pos--;
   if (new_pos != caret_pos) {
     ctx->set_caret_pos(new_pos);
     return true;
@@ -288,6 +296,18 @@ bool Navigator::GoToEnd(Context* ctx) {
     return true;
   }
   return false;
+}
+
+bool Navigator::IsAfterDelimiter(size_t pos) {
+  if (pos == 0)
+    return false;
+  return delimiters_.find(input_[pos - 1]) != string::npos;
+}
+
+bool Navigator::IsBeforeDelimiter(size_t pos) {
+  if (pos >= input_.length() - 1)
+    return false;
+  return delimiters_.find(input_[pos]) != string::npos;
 }
 
 }  // namespace rime
