@@ -216,7 +216,8 @@ bool Navigator::JumpLeft(Context* ctx, size_t start_pos, bool loop) {
               : (std::max)(start_pos, spans_.PreviousStop(end_of_input))
           // 跳至前一個切分點
           : (std::max)(start_pos, spans_.PreviousStop(caret_pos));
-  if (stop_before_delimiter_ && IsAfterDelimiter(new_pos) && caret_pos != new_pos - 1)
+  if (stop_before_delimiter_ && IsAfterDelimiter(new_pos) &&
+      caret_pos != new_pos - 1)
     new_pos--;
   if (new_pos != caret_pos) {
     ctx->set_caret_pos(new_pos);
@@ -237,7 +238,8 @@ bool Navigator::JumpRight(Context* ctx, size_t start_pos, bool loop) {
       : (caret_pos >= end_of_translation) ? end_of_input
                                           // 跳至後一個切分點
                                           : spans_.NextStop(caret_pos);
-  if (stop_before_delimiter_ && IsAfterDelimiter(new_pos) && caret_pos != new_pos - 1)
+  if (stop_before_delimiter_ && IsAfterDelimiter(new_pos) &&
+      caret_pos != new_pos - 1)
     new_pos--;
   if (new_pos != caret_pos) {
     ctx->set_caret_pos(new_pos);
