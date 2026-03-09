@@ -124,8 +124,11 @@ bool Navigator::LeftByCharNoLoop(Context* ctx) {
 bool Navigator::Rewind(Context* ctx) {
   BeginMove(ctx);
   // take a jump leftwards when there are multiple spans,
-  // but not from the middle of a span.
-  if (spans_.Count() > 1 && spans_.HasVertex(ctx->caret_pos())) {
+  // but not from the middle of a span
+  size_t caret_pos = ctx->caret_pos();
+  if (stop_before_delimiter_)
+    caret_pos = SkipDelimiterForward(caret_pos);
+  if (spans_.Count() > 1 && spans_.HasVertex(caret_pos)) {
     size_t confirmed_pos = ctx->composition().GetConfirmedPosition();
     JumpLeft(ctx, confirmed_pos, true);
   } else {
@@ -136,7 +139,10 @@ bool Navigator::Rewind(Context* ctx) {
 
 bool Navigator::Forward(Context* ctx) {
   BeginMove(ctx);
-  if (spans_.Count() > 1 && spans_.HasVertex(ctx->caret_pos())) {
+  size_t caret_pos = SkipDelimiterForward(ctx->caret_pos());
+  if (stop_before_delimiter_)
+    caret_pos = SkipDelimiterForward(caret_pos);
+  if (spans_.Count() > 1 && spans_.HasVertex(caret_pos)) {
     size_t confirmed_pos = ctx->composition().GetConfirmedPosition();
     JumpRight(ctx, confirmed_pos, true);
   } else {
@@ -201,6 +207,8 @@ void Navigator::BeginMove(Context* ctx) {
 bool Navigator::JumpLeft(Context* ctx, size_t start_pos, bool loop) {
   DLOG(INFO) << "jump left.";
   size_t caret_pos = ctx->caret_pos();
+  if (stop_before_delimiter_)
+    caret_pos = SkipDelimiterForward(caret_pos);
   size_t end_of_translation = spans_.end();
   size_t end_of_input = ctx->input().length();
   size_t new_pos =
@@ -228,6 +236,8 @@ bool Navigator::JumpLeft(Context* ctx, size_t start_pos, bool loop) {
 bool Navigator::JumpRight(Context* ctx, size_t start_pos, bool loop) {
   DLOG(INFO) << "jump right.";
   size_t caret_pos = ctx->caret_pos();
+  if (stop_before_delimiter_)
+    caret_pos = SkipDelimiterForward(caret_pos);
   size_t end_of_translation = spans_.end();
   size_t end_of_input = ctx->input().length();
   size_t new_pos =
@@ -301,6 +311,13 @@ bool Navigator::GoToEnd(Context* ctx) {
 size_t Navigator::SkipDelimiterBackward(size_t pos) {
   while (pos > 0 && delimiters_.find(input_[pos - 1]) != string::npos)
     pos--;
+  return pos;
+}
+
+size_t Navigator::SkipDelimiterForward(size_t pos) {
+  while (pos < input_.length() - 1 && 
+         delimiters_.find(input_[pos]) != string::npos)
+    pos++;
   return pos;
 }
 
