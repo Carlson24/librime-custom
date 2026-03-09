@@ -315,7 +315,7 @@ size_t Navigator::SkipDelimiterBackward(size_t pos) {
 }
 
 size_t Navigator::SkipDelimiterForward(size_t pos) {
-  while (pos < input_.length() - 1 && 
+  while (pos < input_.length() - 1 &&
          delimiters_.find(input_[pos]) != string::npos)
     pos++;
   return pos;
