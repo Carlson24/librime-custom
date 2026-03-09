@@ -216,9 +216,8 @@ bool Navigator::JumpLeft(Context* ctx, size_t start_pos, bool loop) {
               : (std::max)(start_pos, spans_.PreviousStop(end_of_input))
           // 跳至前一個切分點
           : (std::max)(start_pos, spans_.PreviousStop(caret_pos));
-  if (stop_before_delimiter_ && IsAfterDelimiter(new_pos) &&
-      caret_pos != new_pos - 1)
-    new_pos--;
+  if (stop_before_delimiter_)
+    new_pos = SkipDelimiterBackward(new_pos);
   if (new_pos != caret_pos) {
     ctx->set_caret_pos(new_pos);
     return true;
@@ -238,9 +237,8 @@ bool Navigator::JumpRight(Context* ctx, size_t start_pos, bool loop) {
       : (caret_pos >= end_of_translation) ? end_of_input
                                           // 跳至後一個切分點
                                           : spans_.NextStop(caret_pos);
-  if (stop_before_delimiter_ && IsAfterDelimiter(new_pos) &&
-      caret_pos != new_pos - 1)
-    new_pos--;
+  if (stop_before_delimiter_)
+    new_pos = SkipDelimiterBackward(new_pos);
   if (new_pos != caret_pos) {
     ctx->set_caret_pos(new_pos);
     return true;
@@ -300,16 +298,10 @@ bool Navigator::GoToEnd(Context* ctx) {
   return false;
 }
 
-bool Navigator::IsAfterDelimiter(size_t pos) {
-  if (pos == 0)
-    return false;
-  return delimiters_.find(input_[pos - 1]) != string::npos;
-}
-
-bool Navigator::IsBeforeDelimiter(size_t pos) {
-  if (pos >= input_.length() - 1)
-    return false;
-  return delimiters_.find(input_[pos]) != string::npos;
+size_t Navigator::SkipDelimiterBackward(size_t pos) {
+  while (pos > 0 && delimiters_.find(input_[pos - 1]) != string::npos)
+    pos--;
+  return pos;
 }
 
 }  // namespace rime

@@ -58,8 +58,7 @@ class Navigator : public Processor, public KeyBindingProcessor<Navigator, 2> {
  private:
   string delimiters_;
   bool stop_before_delimiter_ = false;
-  bool IsBeforeDelimiter(size_t pos);
-  bool IsAfterDelimiter(size_t pos);
+  size_t SkipDelimiterBackward(size_t pos);
 };
 
 }  // namespace rime
