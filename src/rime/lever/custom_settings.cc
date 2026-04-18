@@ -87,8 +87,7 @@ bool CustomSettings::Customize(const string& key, const an<ConfigItem>& item) {
 }
 
 bool CustomSettings::IsFirstRun() {
-  path custom_config_path =
-      deployer_->user_data_dir / custom_config_file(config_id_);
+  path custom_config_path = get_custom_config_path(deployer_, config_id_);
   Config config;
   if (!config.LoadFromFile(custom_config_path))
     return true;
