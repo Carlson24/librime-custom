@@ -29,6 +29,7 @@ option(INSTALL_PRIVATE_HEADERS "Install private headers (usually needed for exte
 option(ENABLE_EXTERNAL_PLUGINS "Enable loading of externally built Rime plugins (from directory set by RIME_PLUGINS_DIR variable)" OFF)
 option(ENABLE_THREADING "Enable threading for deployer" ON)
 option(ENABLE_TIMESTAMP "Embed timestamp to schema artifacts" ON)
+option(ENABLE_PROFILING "Enable component-level profiling output" OFF)
 
 set(RIME_DATA_DIR "rime-data" CACHE STRING "Target directory for Rime data")
 set(RIME_PLUGINS_DIR "rime-plugins" CACHE STRING "Target directory for externally built Rime plugins")
@@ -113,6 +114,10 @@ endif()
 
 if(NOT ENABLE_TIMESTAMP)
   add_definitions(-DRIME_NO_TIMESTAMP)
+endif()
+
+if(ENABLE_PROFILING)
+  set(RIME_ENABLE_PROFILING 1)
 endif()
 
 if(BUILD_TEST)

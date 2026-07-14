@@ -22,7 +22,8 @@ class Translation;
 class Filter : public Class<Filter, const Ticket&> {
  public:
   explicit Filter(const Ticket& ticket)
-      : engine_(ticket.engine), name_space_(ticket.name_space) {}
+      : engine_(ticket.engine), name_space_(ticket.name_space),
+        klass_(ticket.klass) {}
   virtual ~Filter() = default;
 
   virtual an<Translation> Apply(an<Translation> translation,
@@ -31,10 +32,12 @@ class Filter : public Class<Filter, const Ticket&> {
   virtual bool AppliesToSegment(Segment* segment) { return true; }
 
   string name_space() const { return name_space_; }
+  string klass() const { return klass_; }
 
  protected:
   Engine* engine_;
   string name_space_;
+  string klass_;
 };
 
 }  // namespace rime

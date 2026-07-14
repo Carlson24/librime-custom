@@ -14,6 +14,7 @@
 #include <rime/key_event.h>
 #include <rime/menu.h>
 #include <rime/processor.h>
+#include <rime/profiler.h>
 #include <rime/schema.h>
 #include <rime/segmentation.h>
 #include <rime/segmentor.h>
@@ -98,8 +99,10 @@ ConcreteEngine::~ConcreteEngine() {
 
 bool ConcreteEngine::ProcessKey(const KeyEvent& key_event) {
   DLOG(INFO) << "process key: " << key_event;
+  RIME_PROFILE_SCOPE("engine", "ProcessKey");
   ProcessResult ret = kNoop;
   for (auto& processor : processors_) {
+    RIME_PROFILE_SCOPE("processor", processor->klass());
     ret = processor->ProcessKeyEvent(key_event);
     if (ret == kRejected)
       break;
@@ -110,6 +113,7 @@ bool ConcreteEngine::ProcessKey(const KeyEvent& key_event) {
   context_->commit_history().Push(key_event);
   // post-processing
   for (auto& processor : post_processors_) {
+    RIME_PROFILE_SCOPE("post_processor", processor->klass());
     ret = processor->ProcessKeyEvent(key_event);
     if (ret == kRejected)
       break;
@@ -154,6 +158,7 @@ void ConcreteEngine::OnPropertyUpdate(Context* ctx, const string& property) {
 void ConcreteEngine::Compose(Context* ctx) {
   if (!ctx)
     return;
+  RIME_PROFILE_SCOPE("engine", "Compose");
   Composition& comp = ctx->composition();
   const string active_input = ctx->input().substr(0, ctx->caret_pos());
   DLOG(INFO) << "active input: " << active_input;
@@ -163,8 +168,14 @@ void ConcreteEngine::Compose(Context* ctx) {
     // translate one segment past caret pos.
     comp.Reset(ctx->input());
   }
-  CalculateSegmentation(&comp);
-  TranslateSegments(&comp);
+  {
+    RIME_PROFILE_SCOPE("engine", "CalcSeg");
+    CalculateSegmentation(&comp);
+  }
+  {
+    RIME_PROFILE_SCOPE("engine", "TransSeg");
+    TranslateSegments(&comp);
+  }
   DLOG(INFO) << "composition: [" << comp.GetDebugText() << "]";
 }
 
@@ -178,6 +189,7 @@ void ConcreteEngine::CalculateSegmentation(Segmentation* segments) {
     DLOG(INFO) << "end pos: " << end_pos;
     // recognize a segment by calling the segmentors in turn
     for (auto& segmentor : segmentors_) {
+      RIME_PROFILE_SCOPE("segmentor", segmentor->klass());
       if (!segmentor->Proceed(segments))
         break;
     }
@@ -202,6 +214,7 @@ void ConcreteEngine::CalculateSegmentation(Segmentation* segments) {
 
 void ConcreteEngine::TranslateSegments(Segmentation* segments) {
   DLOG(INFO) << "TranslateSegments: " << *segments;
+  int seg_idx = 0;
   for (Segment& segment : *segments) {
     DLOG(INFO) << "segment [" << segment.start << ", " << segment.end
                << "), status: " << segment.status;
@@ -212,6 +225,13 @@ void ConcreteEngine::TranslateSegments(Segmentation* segments) {
     DLOG(INFO) << "translating segment: [" << input << "]";
     auto menu = New<Menu>();
     for (auto& translator : translators_) {
+      string ns = translator->name_space();
+      string info = translator->klass();
+      if (!ns.empty() && ns != "translator" && ns != info) {
+        info += "@" + ns;
+      }
+      info += "|s" + std::to_string(seg_idx) + "l" + std::to_string(len);
+      RIME_PROFILE_SCOPE("translator", info);
       auto translation = translator->Query(input, segment);
       if (!translation)
         continue;
@@ -222,6 +242,7 @@ void ConcreteEngine::TranslateSegments(Segmentation* segments) {
       menu->AddTranslation(translation);
     }
     for (auto& filter : filters_) {
+      RIME_PROFILE_SCOPE("filter", filter->klass());
       if (filter->AppliesToSegment(&segment)) {
         menu->AddFilter(filter.get());
       }
@@ -229,6 +250,7 @@ void ConcreteEngine::TranslateSegments(Segmentation* segments) {
     segment.status = Segment::kGuess;
     segment.menu = menu;
     segment.selected_index = 0;
+    seg_idx++;
   }
 }
 
@@ -237,6 +259,7 @@ void ConcreteEngine::FormatText(string* text) {
     return;
   DLOG(INFO) << "applying formatters.";
   for (auto& formatter : formatters_) {
+    RIME_PROFILE_SCOPE("formatter", formatter->klass());
     formatter->Format(text);
   }
 }
