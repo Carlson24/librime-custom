@@ -9,6 +9,7 @@
 #ifndef RIME_PRISM_H_
 #define RIME_PRISM_H_
 
+#include <string_view>
 #include <darts.h>
 #include <rime/common.h>
 #include <rime/algo/spelling.h>
@@ -44,6 +45,8 @@ struct Metadata {
   // v1.0
   OffsetPtr<SpellingMap> spelling_map;
   char alphabet[256];
+  // v5.0
+  uint32_t max_key_length;
 };
 
 }  // namespace prism
@@ -77,16 +80,16 @@ class Prism : public MappedFile {
                       uint32_t dict_file_checksum = 0,
                       uint32_t schema_file_checksum = 0);
 
-  RIME_DLL bool HasKey(const string& key);
-  RIME_DLL bool GetValue(const string& key, int* value) const;
-  RIME_DLL void CommonPrefixSearch(const string& key, vector<Match>* result);
-  RIME_DLL void ExpandSearch(const string& key,
+  RIME_DLL bool HasKey(std::string_view key);
+  RIME_DLL bool GetValue(std::string_view key, int* value) const;
+  RIME_DLL void CommonPrefixSearch(std::string_view key, vector<Match>* result);
+  RIME_DLL void ExpandSearch(std::string_view key,
                              vector<Match>* result,
                              size_t limit);
   SpellingAccessor QuerySpelling(SyllableId spelling_id);
 
   RIME_DLL size_t array_size() const;
-
+  RIME_DLL size_t max_key_length() const;
   uint32_t dict_file_checksum() const;
   uint32_t schema_file_checksum() const;
   Darts::DoubleArray& trie() const { return *trie_; }

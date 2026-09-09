@@ -22,6 +22,7 @@ Calculus::Calculus() {
   Register("derive", &Derivation::Parse);
   Register("fuzz", &Fuzzing::Parse);
   Register("abbrev", &Abbreviation::Parse);
+  Register("reorder", &Reorder::Parse);
 }
 
 void Calculus::Register(const string& token, Calculation::Factory* factory) {
@@ -70,27 +71,38 @@ Calculation* Transliteration::Parse(const vector<string>& args) {
 bool Transliteration::Apply(Spelling* spelling) {
   if (!spelling || spelling->str.empty())
     return false;
+
+  const char* const start = spelling->str.c_str();
+  const char* const end = start + spelling->str.size();
+
+  string result;
   bool modified = false;
-  const char* p = spelling->str.c_str();
-  const int buffer_len = 256;
-  char buffer[buffer_len] = "";
-  char* q = buffer;
-  uint32_t c;
-  while ((c = utf8::unchecked::next(p))) {
-    if (q - buffer > buffer_len - 7) {  // insufficient space
-      modified = false;
-      break;
+
+  const char* p = start;
+  while (p < end) {
+    const char* here = p;
+    uint32_t c = utf8::unchecked::next(p);
+
+    auto it = char_map_.find(c);
+    if (it != char_map_.end()) {
+      if (!modified) {
+        // allocate space and copy unmodified prefix up to this point
+        modified = true;
+        result.reserve(spelling->str.size());
+        result.assign(start, here - start);
+      }
+      c = it->second;  // replace character
     }
-    if (char_map_.find(c) != char_map_.end()) {
-      c = char_map_[c];
-      modified = true;
+
+    if (modified) {
+      utf8::unchecked::append(c, std::back_inserter(result));
     }
-    q = utf8::unchecked::append(c, q);
   }
+
   if (modified) {
-    *q = '\0';
-    spelling->str.assign(buffer);
+    spelling->str = std::move(result);
   }
+
   return modified;
 }
 
@@ -241,6 +253,120 @@ bool Correction::Apply(Spelling* spelling) {
     spelling->properties.credibility += kCorrectionPenalty;
   }
   return result;
+}
+
+// Reorder
+
+Calculation* Reorder::Parse(const vector<string>& args) {
+  if (args.size() < 2)
+    return nullptr;
+  const string& order = args[1];
+  if (order.empty())
+    return nullptr;
+  bool dedup = args.size() > 2 && args[2] == "dedup";
+  the<Reorder> x(new Reorder);
+  utf8::unchecked::utf8to32(order.begin(), order.end(),
+                            std::back_inserter(x->order_));
+  x->dedup_ = dedup;
+  return x.release();
+}
+
+bool Reorder::Apply(Spelling* spelling) {
+  if (!spelling || spelling->str.empty())
+    return false;
+
+  const char* const start = spelling->str.c_str();
+  const char* const end = start + spelling->str.length();
+
+  string result;
+  bool modified = false;
+
+  vector<int> key_count(order_.size(), 0);
+  const char* group_start = nullptr;
+  size_t last_key_index = 0;
+  bool needs_reorder = false;
+
+  // flush the reordered characters from the key group
+  auto flush_group = [&](auto& output) {
+    for (size_t k = 0; k < order_.size(); ++k) {
+      if (key_count[k]) {
+        const uint32_t key = order_.at(k);
+        const size_t n = dedup_ ? 1 : key_count[k];
+        for (size_t i = 0; i < n; ++i) {
+          utf8::unchecked::append(key, output);
+        }
+      }
+    }
+  };
+
+  // clear the key count of the current group
+  auto clear_group = [&]() {
+    std::fill(key_count.begin(), key_count.end(), 0);
+    group_start = nullptr;
+  };
+
+  auto settle_group = [&](const char* group_end) {
+    if (!group_start)
+      return;
+
+    if (needs_reorder) {
+      if (!modified) {
+        modified = true;
+        // allocate space and copy unmodified prefix before the group
+        result.reserve(spelling->str.size());
+        result.assign(start, group_start - start);
+      }
+      auto output = std::back_inserter(result);
+      flush_group(output);
+    } else if (modified) {
+      // copy the unmodified group to the result
+      result.append(group_start, group_end - group_start);
+    }
+    clear_group();
+  };
+
+  const char* p = start;
+  while (p < end) {
+    const char* const here = p;
+    uint32_t c = utf8::unchecked::next(p);
+
+    size_t key_index = order_.find(c);
+    if (key_index != std::u32string::npos) {
+      // belongs to the key group to be reordered
+      if (!group_start) {
+        group_start = here;
+        needs_reorder = false;
+      } else if (key_index < last_key_index) {
+        // the key is not in monotonically increasing order
+        needs_reorder = true;
+      }
+      last_key_index = key_index;
+
+      ++key_count[key_index];
+      if (dedup_ && key_count[key_index] > 1) {
+        needs_reorder = true;
+      }
+      continue;
+    }
+
+    // found a delimiting character; settle the previous key group
+    settle_group(here);
+
+    // append the current delimiting character
+    if (modified) {
+      auto output = std::back_inserter(result);
+      utf8::unchecked::append(c, output);
+    }
+  }  // end of string traversal
+
+  // settle the key group at the end of string
+  settle_group(end);
+
+  if (modified) {
+    spelling->str = std::move(result);
+  }
+
+  return modified;
 }
 
 }  // namespace rime

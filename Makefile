@@ -32,7 +32,7 @@ prefix ?= $(DESTDIR)/usr
 endif
 
 ifndef NOPARALLEL
-export MAKEFLAGS+=" -j$$(( $$(nproc 2>/dev/null || getconf _NPROCESSORS_ONLN 2>/dev/null || getconf NPROCESSORS_ONLN 2>/dev/null || echo 8) + 1)) "
+  MAKEFLAGS += -j$(shell expr $$(nproc 2>/dev/null || getconf _NPROCESSORS_ONLN 2>/dev/null || getconf NPROCESSORS_ONLN 2>/dev/null || echo 8) + 1)
 endif
 
 debug install-debug uninstall-debug test-debug: build ?= debug
@@ -46,6 +46,7 @@ install-debug uninstall-debug
 all: release
 
 clang-format-lint:
+	clang-format --version
 	find ${RIME_SOURCE_PATH} \! -path 'plugins/*/*' -a \( -name '*.cc' -o -name '*.h' \) | \
 	xargs clang-format -Werror --dry-run || { echo Please lint your code by '"'"make clang-format-apply"'"'.; false; }
 
