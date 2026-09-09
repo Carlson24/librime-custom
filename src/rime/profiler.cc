@@ -42,9 +42,8 @@ void ProfileManager::OnComponentTiming(const std::string& type,
     callback_(type, name, elapsed_ns);
   } else {
     std::fprintf(get_profile_output(),
-                 "[PROFILE] %-15s %-30s %8ld ns (%7.3f µs)\n",
-                 type.c_str(), name.c_str(), (long)elapsed_ns,
-                 elapsed_ns / 1000.0);
+                 "[PROFILE] %-15s %-30s %8ld ns (%7.3f µs)\n", type.c_str(),
+                 name.c_str(), (long)elapsed_ns, elapsed_ns / 1000.0);
   }
 }
 

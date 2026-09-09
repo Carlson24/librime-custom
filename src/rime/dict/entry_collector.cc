@@ -5,9 +5,11 @@
 // 2011-11-27 GONG Chen <chen.sst@gmail.com>
 //
 #include <algorithm>
+#include <cctype>
 #include <fstream>
 #include <utility>
 #include <boost/algorithm/string.hpp>
+#include <utf8.h>
 #include <rime/algo/strings.h>
 #include <rime/dict/dict_settings.h>
 #include <rime/dict/entry_collector.h>
@@ -52,6 +54,43 @@ void EntryCollector::LoadPresetVocabulary(DictSettings* settings) {
     if (settings->min_phrase_weight() > 0)
       preset_vocabulary->set_min_phrase_weight(settings->min_phrase_weight());
   }
+}
+
+bool EntryCollector::LoadAuxiliaryCodes(const path& file) {
+  auxiliary_codes_.clear();
+  auxiliary_enabled_ = false;
+  std::ifstream fin(file.c_str());
+  if (!fin) {
+    LOG(ERROR) << "failed to load auxiliary code file: " << file;
+    return false;
+  }
+  string line;
+  int line_number = 0;
+  while (getline(fin, line)) {
+    ++line_number;
+    boost::algorithm::trim_right(line);
+    if (line.empty() || line[0] == '#')
+      continue;
+    auto row = strings::split(line, "\t");
+    if (row.size() < 2 || row[0].empty()) {
+      LOG(WARNING) << "invalid auxiliary code at line " << line_number
+                   << " in file: " << file;
+      continue;
+    }
+    auxiliary_codes_[row[0]] = row[1];
+  }
+  fin.close();
+  auxiliary_enabled_ = true;
+  LOG(INFO) << "loaded " << auxiliary_codes_.size() << " auxiliary codes from "
+            << file;
+  return true;
+}
+
+bool EntryCollector::IsIgnoredAuxChar(const string& ch) const {
+  // whitespace is always ignored when aligning auxiliary codes
+  if (ch.size() == 1 && isspace(static_cast<unsigned char>(ch[0])))
+    return true;
+  return auxiliary_ignore_chars_.find(ch) != string::npos;
 }
 
 void EntryCollector::Collect(const path& dict_file) {
@@ -115,6 +154,43 @@ void EntryCollector::Collect(const path& dict_file) {
     // collect entry
     collection.insert(word);
     if (!code_str.empty()) {
+      if (!enable_tone_) {
+        // strip trailing tone digits (0-9) from each syllable
+        RawCode raw_code;
+        raw_code.FromString(code_str);
+        for (auto& syllable : raw_code) {
+          if (!syllable.empty() && syllable.back() >= '0' &&
+              syllable.back() <= '9') {
+            syllable.pop_back();
+          }
+        }
+        code_str = raw_code.ToString();
+      }
+      if (auxiliary_enabled_) {
+        RawCode raw_code;
+        raw_code.FromString(code_str);
+        size_t index = 0;
+        const char* char_ptr = word.c_str();
+        const char* char_end = char_ptr;
+        while (*char_end != '\0' && index < raw_code.size()) {
+          utf8::unchecked::next(char_end);
+          string character(char_ptr, char_end - char_ptr);
+          char_ptr = char_end;
+          if (IsIgnoredAuxChar(character)) {
+            continue;
+          }
+          if (raw_code[index].find(auxiliary_code_separator_) != string::npos) {
+            ++index;
+            continue;
+          }
+          auto aux = auxiliary_codes_.find(character);
+          string aux_code =
+              (aux != auxiliary_codes_.end()) ? aux->second : string();
+          raw_code[index] += auxiliary_code_separator_ + aux_code;
+          ++index;
+        }
+        code_str = raw_code.ToString();
+      }
       CreateEntry(word, code_str, weight_str);
     } else {
       encode_queue.push({word, weight_str});

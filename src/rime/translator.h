@@ -22,7 +22,8 @@ struct Segment;
 class Translator : public Class<Translator, const Ticket&> {
  public:
   explicit Translator(const Ticket& ticket)
-      : engine_(ticket.engine), name_space_(ticket.name_space),
+      : engine_(ticket.engine),
+        name_space_(ticket.name_space),
         klass_(ticket.klass) {}
   virtual ~Translator() = default;
 

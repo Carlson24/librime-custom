@@ -24,7 +24,8 @@ enum ProcessResult {
 class Processor : public Class<Processor, const Ticket&> {
  public:
   explicit Processor(const Ticket& ticket)
-      : engine_(ticket.engine), name_space_(ticket.name_space),
+      : engine_(ticket.engine),
+        name_space_(ticket.name_space),
         klass_(ticket.klass) {}
   virtual ~Processor() = default;
 

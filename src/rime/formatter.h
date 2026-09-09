@@ -19,7 +19,8 @@ class Engine;
 class Formatter : public Class<Formatter, const Ticket&> {
  public:
   Formatter(const Ticket& ticket)
-      : engine_(ticket.engine), name_space_(ticket.name_space),
+      : engine_(ticket.engine),
+        name_space_(ticket.name_space),
         klass_(ticket.klass) {}
   virtual ~Formatter() = default;
 

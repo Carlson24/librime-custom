@@ -63,7 +63,8 @@ static bool get_dict_files_from_settings(vector<path>* dict_files,
 
 static uint32_t compute_dict_file_checksum(uint32_t initial_checksum,
                                            const vector<path>& dict_files,
-                                           DictSettings& settings) {
+                                           DictSettings& settings,
+                                           ResourceResolver* source_resolver) {
   if (dict_files.empty()) {
     return initial_checksum;
   }
@@ -73,6 +74,13 @@ static uint32_t compute_dict_file_checksum(uint32_t initial_checksum,
   }
   if (settings.use_preset_vocabulary()) {
     cc.ProcessFile(PresetVocabulary::DictFilePath(settings.vocabulary()));
+  }
+  string aux_file_name = settings.auxiliary_code_file();
+  if (!aux_file_name.empty()) {
+    auto aux_file = source_resolver->ResolvePath(aux_file_name);
+    if (std::filesystem::exists(aux_file)) {
+      cc.ProcessFile(aux_file);
+    }
   }
   return cc.Checksum();
 }
@@ -94,8 +102,8 @@ bool DictCompiler::Compile(const path& schema_file) {
                                     source_resolver_.get())) {
     return false;
   }
-  uint32_t dict_file_checksum =
-      compute_dict_file_checksum(0, dict_files, settings);
+  uint32_t dict_file_checksum = compute_dict_file_checksum(
+      0, dict_files, settings, source_resolver_.get());
   uint32_t schema_file_checksum =
       schema_file.empty() ? 0 : Checksum(schema_file);
   bool rebuild_table = false;
@@ -184,8 +192,8 @@ bool DictCompiler::Compile(const path& schema_file) {
                                       source_resolver_.get())) {
       continue;
     }
-    uint32_t pack_file_checksum =
-        compute_dict_file_checksum(dict_file_checksum, dict_files, settings);
+    uint32_t pack_file_checksum = compute_dict_file_checksum(
+        dict_file_checksum, dict_files, settings, source_resolver_.get());
     bool rebuild_pack = true;
     if (pack_table->Exists() && pack_table->Load()) {
       rebuild_pack = pack_table->dict_file_checksum() != pack_file_checksum;
@@ -225,6 +233,21 @@ bool DictCompiler::BuildTable(int table_index,
   table = New<Table>(target_path);
 
   collector.Configure(settings);
+  collector.set_enable_tone(settings->enable_tone());
+  string aux_file_name = settings->auxiliary_code_file();
+  if (!aux_file_name.empty()) {
+    auto aux_file = source_resolver_->ResolvePath(aux_file_name);
+    if (std::filesystem::exists(aux_file)) {
+      if (collector.LoadAuxiliaryCodes(aux_file)) {
+        collector.set_auxiliary_code_separator(
+            settings->auxiliary_code_separator());
+        collector.set_auxiliary_ignore_chars(
+            settings->auxiliary_code_ignore_chars());
+      }
+    } else {
+      LOG(ERROR) << "auxiliary code file '" << aux_file << "' does not exist.";
+    }
+  }
   collector.Collect(dict_files);
   if (options_ & kDump) {
     path dump_path(table->file_path());

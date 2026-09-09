@@ -26,6 +26,10 @@ class DictSettings : public Config {
   bool use_rule_based_encoder();
   int max_phrase_length();
   double min_phrase_weight();
+  string auxiliary_code_file();
+  string auxiliary_code_separator();
+  string auxiliary_code_ignore_chars();
+  bool enable_tone();
   an<ConfigList> GetTables();
   int GetColumnIndex(const string& column_label);
 };

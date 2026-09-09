@@ -22,7 +22,8 @@ class Translation;
 class Filter : public Class<Filter, const Ticket&> {
  public:
   explicit Filter(const Ticket& ticket)
-      : engine_(ticket.engine), name_space_(ticket.name_space),
+      : engine_(ticket.engine),
+        name_space_(ticket.name_space),
         klass_(ticket.klass) {}
   virtual ~Filter() = default;
 

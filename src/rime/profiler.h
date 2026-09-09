@@ -17,10 +17,9 @@ namespace rime {
 
 class ProfileManager {
  public:
-  using ComponentCallback = std::function<void(
-      const std::string& type,
-      const std::string& name,
-      int64_t elapsed_ns)>;
+  using ComponentCallback = std::function<void(const std::string& type,
+                                               const std::string& name,
+                                               int64_t elapsed_ns)>;
 
   void OnComponentTiming(const std::string& type,
                          const std::string& name,

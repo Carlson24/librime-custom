@@ -18,7 +18,8 @@ class Segmentation;
 class Segmentor : public Class<Segmentor, const Ticket&> {
  public:
   explicit Segmentor(const Ticket& ticket)
-      : engine_(ticket.engine), name_space_(ticket.name_space),
+      : engine_(ticket.engine),
+        name_space_(ticket.name_space),
         klass_(ticket.klass) {}
   virtual ~Segmentor() = default;
 

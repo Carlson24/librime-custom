@@ -223,6 +223,7 @@ TableTranslator::TableTranslator(const Ticket& ticket)
                     &encode_commit_history_);
     config->GetInt(name_space_ + "/max_phrase_length", &max_phrase_length_);
     config->GetInt(name_space_ + "/max_homographs", &max_homographs_);
+    config->GetInt(name_space_ + "/min_word_length", &min_word_length_);
     if (enable_sentence_ || sentence_over_completion_ ||
         contextual_suggestions_) {
       poet_.reset(new Poet(language(), config, Poet::LeftAssociateCompare));
@@ -244,6 +245,9 @@ static bool starts_with_completion(an<Translation> translation) {
 an<Translation> TableTranslator::Query(const string& input,
                                        const Segment& segment) {
   if (!segment.HasAnyTagIn(tags_))
+    return nullptr;
+  int len = static_cast<int>(input.length());
+  if (min_word_length_ > 0 && len < min_word_length_)
     return nullptr;
   DLOG(INFO) << "input = '" << input << "', [" << segment.start << ", "
              << segment.end << ")";

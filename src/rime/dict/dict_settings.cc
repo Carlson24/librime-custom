@@ -76,6 +76,25 @@ double DictSettings::min_phrase_weight() {
   return (*this)["min_phrase_weight"].ToDouble();
 }
 
+string DictSettings::auxiliary_code_file() {
+  return (*this)["aux_file"].ToString();
+}
+
+string DictSettings::auxiliary_code_separator() {
+  string value = (*this)["aux_separator"].ToString();
+  return !value.empty() ? value : ";";
+}
+
+string DictSettings::auxiliary_code_ignore_chars() {
+  return (*this)["aux_ignore_chars"].ToString();
+}
+
+bool DictSettings::enable_tone() {
+  if (!(*this)["enable_tone"].IsValue())
+    return true;  // default true
+  return (*this)["enable_tone"].ToBool();
+}
+
 an<ConfigList> DictSettings::GetTables() {
   if (empty())
     return nullptr;
