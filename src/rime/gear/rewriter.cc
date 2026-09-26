@@ -380,6 +380,7 @@ void Rewriter::LoadConfig() {
   }
   config->GetString(name_space_ + "/comment_template",
                     &options_.comment_template);
+  config->GetBool(name_space_ + "/comment_append", &options_.comment_append);
   config->GetString(name_space_ + "/candidate_type", &options_.candidate_type);
   if (options_.candidate_type == "preserve") {
     options_.candidate_type.clear();
@@ -715,7 +716,19 @@ bool Rewriter::Transform(const RuntimeState& state,
   }
 
   if (options_.mode == Mode::kComment) {
-    const string comment = ApplyCommentTemplate(strings::join(values, " "));
+    // comment 模式默认用改写结果整体替换注释；开启 comment_append 后改为
+    // 在已有注释末尾追加（已包含则跳过，避免重复叠加）。
+    const string rewritten_comment =
+        ApplyCommentTemplate(strings::join(values, " "));
+    const string existing = candidate->comment();
+    string comment = rewritten_comment;
+    if (options_.comment_append && !existing.empty()) {
+      if (existing.find(rewritten_comment) == string::npos) {
+        comment = existing + " " + rewritten_comment;
+      } else {
+        comment = existing;
+      }
+    }
     result->push_back(New<ShadowCandidate>(candidate, candidate->type(),
                                            candidate->text(), comment, false));
     return true;

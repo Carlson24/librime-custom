@@ -51,6 +51,7 @@ class Rewriter : public Filter, public TagMatching {
     bool fallback_on_empty = true;
     CommentSource comment_source = CommentSource::kNone;
     string comment_template = "〔%s〕";
+    bool comment_append = false;
     string candidate_type;
     set<string> excluded_types;
     set<string> promote_on_types;
