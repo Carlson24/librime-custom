@@ -15,20 +15,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        runs-on: [macos-15-intel, macos-15]
+        runs-on: [macos-26-intel, macos-26]
         include:
-          - runs-on: macos-15-intel
+          - runs-on: macos-26-intel
             create-distributable: false
-          - runs-on: macos-15
+          - runs-on: macos-26
             create-distributable: true
             build_variant: universal
     env:
-      boost_version: 1.89.0
-      BOOST_ROOT: ${{ github.workspace }}/deps/boost-1.89.0
+      BOOST_ROOT: ${{ github.workspace }}/deps/boost
       RIME_PLUGINS: ${{ inputs.rime_plugins }}
     steps:
       - name: Checkout last commit
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           repository: ${{ inputs.repository }}
           submodules: recursive
@@ -52,7 +51,7 @@ jobs:
 
       - name: Cache dependencies
         id: cache-deps
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             bin
@@ -83,7 +82,7 @@ jobs:
 
       - name: Upload artifacts
         if: matrix.create-distributable
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: artifact-${{ runner.os }}-${{ matrix.build_variant || runner.arch }}
           path: |

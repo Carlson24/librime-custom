@@ -38,7 +38,11 @@ bool UserDbValue::Unpack(const string& value) {
       if (k == "c") {
         commits = std::stoi(v);
       } else if (k == "d") {
-        dee = (std::min)(10000.0, std::stod(v));
+        try {
+          dee = (std::min)(10000.0, std::stod(v));
+        } catch (std::out_of_range) {
+          dee = 0;
+        }
       } else if (k == "t") {
         tick = std::stoul(v);
       }
@@ -108,7 +112,7 @@ bool UserDbHelper::UpdateUserInfo() {
 }
 
 bool UserDbHelper::IsUniformFormat(const path& file_path) {
-  return boost::ends_with(file_path.filename().u8string(),
+  return boost::ends_with(file_path.filename().to_utf8_string(),
                           plain_userdb_extension);
 }
 

@@ -63,7 +63,7 @@ if(MSVC)
   set(Boost_USE_STATIC_RUNTIME ON)
 endif()
 
-if(LINUX)
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
   find_package(Boost 1.74.0 REQUIRED COMPONENTS regex)
 else()
   find_package(Boost 1.77.0)
@@ -176,6 +176,7 @@ if(MSVC)
   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zi")
   set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /DEBUG /OPT:REF /OPT:ICF")
   add_definitions("/wd4244 /wd4996")
+  add_compile_options("/Zc:__cplusplus")
 
   # large address aware
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /LARGEADDRESSAWARE")

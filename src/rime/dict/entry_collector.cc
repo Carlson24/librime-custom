@@ -95,7 +95,7 @@ bool EntryCollector::IsIgnoredAuxChar(const string& ch) const {
 
 void EntryCollector::Collect(const path& dict_file) {
   LOG(INFO) << "collecting entries from " << dict_file;
-  current_dict_file = dict_file.u8string();
+  current_dict_file = dict_file.to_utf8_string();
   line_number = 0;
   // read table
   std::ifstream fin(dict_file.c_str());

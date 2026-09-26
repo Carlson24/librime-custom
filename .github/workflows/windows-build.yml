@@ -23,13 +23,12 @@ jobs:
           - { compiler: clang, cc: clang, cxx: clang++ }
           - { compiler: msvc, arch: x86, cross_arch: x64_x86 }
     env:
-      boost_version: 1.89.0
-      BOOST_ROOT: ${{ github.workspace }}\deps\boost-1.89.0
+      BOOST_ROOT: ${{ github.workspace }}\deps\boost
       RIME_PLUGINS: ${{ inputs.rime_plugins }}
 
     steps:
       - name: Checkout last commit
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           repository: ${{ inputs.repository }}
           submodules: recursive
@@ -48,7 +47,7 @@ jobs:
           
       - name: Configure MSVC
         if: ${{ matrix.compiler == 'msvc' }}
-        uses: ilammy/msvc-dev-cmd@v1
+        uses: TheMrMilchmann/setup-msvc-dev@v4
         with:
           arch: ${{ matrix.cross_arch || matrix.arch }}
 
@@ -70,7 +69,7 @@ jobs:
 
       - name: Cache dependencies
         id: cache-deps
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             bin
@@ -97,7 +96,7 @@ jobs:
           bin include lib share
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: artifact-${{ runner.os }}-${{ matrix.compiler }}-${{ matrix.arch }}
           path: |
@@ -136,7 +135,7 @@ jobs:
 
       - run: git config --global core.autocrlf input
       - name: Checkout last commit
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           repository: ${{ inputs.repository }}
             
@@ -173,7 +172,7 @@ jobs:
           bin include lib share
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: artifact-${{ runner.os }}-mingw
           path: |

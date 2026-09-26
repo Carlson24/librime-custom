@@ -5,6 +5,7 @@
 // 2011-04-24 GONG Chen <chen.sst@gmail.com>
 //
 #include <cctype>
+#include <chrono>
 #include <rime/common.h>
 #include <rime/composition.h>
 #include <rime/context.h>
@@ -307,7 +308,10 @@ void ConcreteEngine::OnSelect(Context* ctx) {
 void ConcreteEngine::ApplySchema(Schema* schema) {
   if (!schema)
     return;
-  schema_.reset(schema);
+  // 支持 this->schema() 原位重新加載
+  if (schema != schema_.get()) {
+    schema_.reset(schema);
+  }
   context_->Clear();
   context_->ClearTransientOptions();
   InitializeComponents();
@@ -336,7 +340,20 @@ inline void CreateComponentsFromList(Engine* engine,
                    << ticket.klass << "'";
         continue;
       }
+      const auto create_start = std::chrono::steady_clock::now();
       auto component = c->Create(ticket);
+      const auto create_cost_us =
+          std::chrono::duration_cast<std::chrono::microseconds>(
+              std::chrono::steady_clock::now() - create_start)
+              .count();
+      const auto create_cost_ms = create_cost_us / 1000.0;
+      LOG(INFO) << "[ComponentTiming] type=" << component_type
+                << " prescription='" << prescription->str() << "'"
+                << " class='" << ticket.klass << "'"
+                << " namespace='" << ticket.name_space << "'"
+                << " cost_us=" << create_cost_us
+                << " cost_ms=" << create_cost_ms
+                << " success=" << (component != nullptr);
       if (!component) {
         LOG(ERROR) << "error creating " << component_type << " from ticket: '"
                    << ticket.klass << "'";
