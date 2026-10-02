@@ -8,6 +8,7 @@
 #include <iterator>
 #include <rime/filter.h>
 #include <rime/menu.h>
+#include <rime/profiler.h>
 #include <rime/translation.h>
 
 namespace rime {
@@ -24,6 +25,7 @@ void Menu::AddFilter(Filter* filter) {
 }
 
 size_t Menu::Prepare(size_t requested) {
+  RIME_PROFILE_SCOPE("menu", "Prepare");
   DLOG(INFO) << "preparing " << requested << " candidates.";
   while (candidates_.size() < requested && !result_->exhausted()) {
     if (auto cand = result_->Peek()) {
