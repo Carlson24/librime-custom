@@ -19,6 +19,9 @@ target_compile_definitions(rime_test PRIVATE
 file(GLOB test_data_files ${PROJECT_SOURCE_DIR}/data/test/*.yaml)
 file(COPY ${test_data_files} DESTINATION ${EXECUTABLE_OUTPUT_PATH})
 
+file(GLOB aux_test_data_files ${PROJECT_SOURCE_DIR}/data/test/*.aux.txt)
+file(COPY ${aux_test_data_files} DESTINATION ${EXECUTABLE_OUTPUT_PATH})
+
 add_test(NAME rime_test
   COMMAND rime_test
   WORKING_DIRECTORY ${EXECUTABLE_OUTPUT_PATH})

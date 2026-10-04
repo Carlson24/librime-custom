@@ -76,6 +76,19 @@ double DictSettings::min_phrase_weight() {
   return (*this)["min_phrase_weight"].ToDouble();
 }
 
+string DictSettings::auxiliary_code_file() {
+  return (*this)["aux_file"].ToString();
+}
+
+string DictSettings::auxiliary_code_separator() {
+  string value = (*this)["aux_separator"].ToString();
+  return !value.empty() ? value : ";";
+}
+
+string DictSettings::auxiliary_code_ignore_chars() {
+  return (*this)["aux_ignore_chars"].ToString();
+}
+
 an<ConfigList> DictSettings::GetTables() {
   if (empty())
     return nullptr;

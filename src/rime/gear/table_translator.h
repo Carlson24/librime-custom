@@ -45,6 +45,7 @@ class TableTranslator : public Translator,
   bool encode_commit_history_ = true;
   int max_phrase_length_ = 5;
   int max_homographs_ = 1;
+  int min_word_length_ = 0;
   the<Poet> poet_;
   the<UnityTableEncoder> encoder_;
 };
