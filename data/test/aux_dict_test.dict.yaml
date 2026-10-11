@@ -1,0 +1,21 @@
+# Rime test dictionary for auxiliary codes
+# encoding: utf-8
+---
+name: aux_dict_test
+version: "0.1"
+sort: original
+aux_file: aux_dict_test.aux.txt
+aux_separator: ";"
+aux_ignore_chars: "，"
+...
+
+你	ni	100
+好	hao	100
+怎	zen	100
+么	me	100
+世	shi	100
+界	jie	100
+你好	ni hao	100
+怎么	zen me	100
+你好，世界	ni hao shi jie	100
+好你	hao;nz ni	100

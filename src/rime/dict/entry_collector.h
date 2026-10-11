@@ -49,6 +49,15 @@ class EntryCollector : public PhraseCollector {
   void Configure(DictSettings* settings);
   void Collect(const vector<path>& dict_files);
 
+  // load auxiliary codes (character -> code) from a tab-separated file
+  bool LoadAuxiliaryCodes(const path& file);
+  void set_auxiliary_code_separator(const string& separator) {
+    auxiliary_code_separator_ = separator;
+  }
+  void set_auxiliary_ignore_chars(const string& chars) {
+    auxiliary_ignore_chars_ = chars;
+  }
+
   // export contents of table and prism to text files
   void Dump(const path& file_path) const;
 
@@ -58,6 +67,7 @@ class EntryCollector : public PhraseCollector {
   bool TranslateWord(const string& word, vector<string>* code);
 
  protected:
+  bool IsIgnoredAuxChar(const string& ch) const;
   void LoadPresetVocabulary(DictSettings* settings);
   // call Collect() multiple times for all required tables
   void Collect(const path& dict_file);
@@ -73,6 +83,11 @@ class EntryCollector : public PhraseCollector {
   WeightMap total_weight;
 
  private:
+  // character -> auxiliary code
+  map<string, string> auxiliary_codes_;
+  string auxiliary_code_separator_ = ";";
+  string auxiliary_ignore_chars_;
+  bool auxiliary_enabled_ = false;
   string current_dict_file;
   size_t line_number;
 };
