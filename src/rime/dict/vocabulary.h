@@ -55,8 +55,8 @@ struct DictEntry {
   // 全碼匹配長度積分，記錄該詞條對應的路徑中，屬於「全拼」部分的字符總長度
   double quality_len = 0.0;
   int commit_count = 0;
-  int remaining_code_length = 0;
-  int matching_code_size = 0;
+  unsigned int remaining_code_length = 0;
+  unsigned int matching_code_size = 0;
 
   DictEntry() = default;
   ShortDictEntry ToShort() const { return {text, code, weight}; }
@@ -69,7 +69,7 @@ struct DictEntry {
   bool operator<(const DictEntry& other) const;
 };
 
-class ShortDictEntryList : public vector<of<ShortDictEntry>> {
+class ShortDictEntryList : public vector<ShortDictEntry> {
  public:
   void Sort();
   void SortRange(size_t start, size_t count);

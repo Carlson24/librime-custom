@@ -27,8 +27,8 @@ class RIME_DLL DictEntryIterator : public DictEntryFilterBinder {
  public:
   DictEntryIterator();
   virtual ~DictEntryIterator() = default;
-  DictEntryIterator(const DictEntryIterator& other) = default;
-  DictEntryIterator& operator=(const DictEntryIterator& other) = default;
+  DictEntryIterator(const DictEntryIterator& other);
+  DictEntryIterator& operator=(const DictEntryIterator& other);
   DictEntryIterator(DictEntryIterator&& other) = default;
   DictEntryIterator& operator=(DictEntryIterator&& other) = default;
 
@@ -65,7 +65,7 @@ class Dictionary : public Class<Dictionary, const Ticket&> {
                       vector<string> packs,
                       vector<of<Table>> tables,
                       an<Prism> prism);
-  virtual ~Dictionary();
+  RIME_DLL virtual ~Dictionary();
 
   bool Exists() const;
   RIME_DLL bool Remove();

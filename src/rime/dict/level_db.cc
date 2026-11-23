@@ -5,7 +5,9 @@
 // 2014-12-04 Chen Gong <chen.sst@gmail.com>
 //
 
+#include <leveldb/cache.h>
 #include <leveldb/db.h>
+#include <leveldb/env.h>
 #include <leveldb/write_batch.h>
 #include <rime/common.h>
 #include <rime/service.h>
@@ -15,6 +17,14 @@
 namespace rime {
 
 static const char* kMetaCharacter = "\x01";
+
+static leveldb::Cache* SharedBlockCache() {
+  // The in-memory user dict cache serves most lookups, so LevelDB only backs
+  // point reads/writes and infrequent scans. Share one small block cache across
+  // all user dbs instead of letting each DB allocate its default 8MB cache.
+  static leveldb::Cache* cache = leveldb::NewLRUCache(2 << 20);
+  return cache;
+}
 
 struct LevelDbCursor {
   leveldb::Iterator* iterator = nullptr;
@@ -54,6 +64,10 @@ struct LevelDbWrapper {
   leveldb::Status Open(const path& file_path, bool readonly) {
     leveldb::Options options;
     options.create_if_missing = !readonly;
+    options.block_cache = SharedBlockCache();
+    // user dict writes are small and frequent; a 4MB default memtable is
+    // overkill and would be freed only on flush
+    options.write_buffer_size = 2 << 20;
     return leveldb::DB::Open(options, file_path.string(), &ptr);
   }
 
@@ -217,7 +231,22 @@ bool LevelDb::Restore(const path& snapshot_file) {
 
 bool LevelDb::Recover() {
   LOG(INFO) << "trying to recover db '" << name() << "'.";
-  auto status = leveldb::RepairDB(file_path().string(), leveldb::Options());
+  // RepairDB() does not acquire the database lock itself; hold it so that
+  // no other process can open, modify or repair the db while files are
+  // being rewritten or archived.
+  leveldb::FileLock* lock = nullptr;
+  auto lock_status =
+      leveldb::Env::Default()->LockFile((file_path() / "LOCK").string(), &lock);
+  if (!lock_status.ok()) {
+    LOG(WARNING) << "cannot lock db '" << name()
+                 << "' for repair: " << lock_status.ToString()
+                 << "; skip recovery.";
+    return false;
+  }
+  leveldb::Options options;
+  options.block_cache = SharedBlockCache();
+  auto status = leveldb::RepairDB(file_path().string(), options);
+  leveldb::Env::Default()->UnlockFile(lock);
   if (status.ok()) {
     LOG(INFO) << "repair finished.";
     return true;
@@ -246,6 +275,17 @@ bool LevelDb::Open() {
   readonly_ = false;
   auto status = db_->Open(file_path(), readonly_);
   loaded_ = status.ok();
+
+  if (!loaded_ && status.IsCorruption()) {
+    // The db may be corrupted by an interrupted write, leaving CURRENT
+    // dangling. Try to salvage the data before giving up.
+    LOG(WARNING) << "db '" << name() << "' is corrupted: " << status.ToString()
+                 << "; trying to recover.";
+    if (Recover()) {
+      status = db_->Open(file_path(), readonly_);
+      loaded_ = status.ok();
+    }
+  }
 
   if (loaded_) {
     string db_name;

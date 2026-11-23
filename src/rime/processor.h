@@ -29,9 +29,7 @@ class Processor : public Class<Processor, const Ticket&> {
         klass_(ticket.klass) {}
   virtual ~Processor() = default;
 
-  virtual ProcessResult ProcessKeyEvent(const KeyEvent& key_event) {
-    return kNoop;
-  }
+  virtual ProcessResult ProcessKeyEvent(const KeyEvent&) { return kNoop; }
 
   string name_space() const { return name_space_; }
   string klass() const { return klass_; }
