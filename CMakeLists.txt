@@ -1,7 +1,7 @@
 set(CMAKE_USER_MAKE_RULES_OVERRIDE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/c_flag_overrides.cmake)
 set(CMAKE_USER_MAKE_RULES_OVERRIDE_CXX ${CMAKE_CURRENT_SOURCE_DIR}/cmake/cxx_flag_overrides.cmake)
 
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.25)
 project(rime)
 set(CMAKE_CXX_STANDARD 17)
 
@@ -36,6 +36,7 @@ set(RIME_PLUGINS_DIR "rime-plugins" CACHE STRING "Target directory for externall
 
 if(WIN32)
   set(ext ".exe")
+  add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 endif(WIN32)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake")
@@ -67,7 +68,7 @@ else()
   find_package(Boost 1.77.0)
 endif()
 if(Boost_FOUND)
-  include_directories(${Boost_INCLUDE_DIRS})
+  include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
   link_directories(${Boost_LIBRARY_DIRS})
   add_definitions(-DBOOST_DLL_USE_STD_FS)
 endif()
@@ -141,12 +142,13 @@ if(YamlCpp_STATIC)
 endif()
 
 find_package(LevelDb REQUIRED)
-if(LevelDb_FOUND)
-    include_directories(${LevelDb_INCLUDE_PATH})
+if(LevelDb_FOUND AND LevelDb_INCLUDE_PATH)
+    include_directories(SYSTEM ${LevelDb_INCLUDE_PATH})
 endif()
 
 # Don't let leveldb's PUBLIC -Werror turn librime warnings into errors.
 if(TARGET leveldb)
+  set_target_properties(leveldb PROPERTIES SYSTEM TRUE)
   target_compile_options(leveldb INTERFACE -Wno-error)
 endif()
 
@@ -157,7 +159,10 @@ endif()
 
 find_package(Opencc REQUIRED)
 if(Opencc_FOUND)
-include_directories(${Opencc_INCLUDE_PATH})
+include_directories(SYSTEM ${Opencc_INCLUDE_PATH})
+endif()
+if(TARGET libopencc)
+  set_target_properties(libopencc PROPERTIES SYSTEM TRUE)
 endif()
 if(Opencc_STATIC)
   add_definitions(-DOpencc_BUILT_AS_STATIC)
